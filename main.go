@@ -5,25 +5,32 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"time"
+
+	"github.com/lmittmann/tint"
 )
 
 func main() {
+	logger := slog.New(tint.NewHandler(os.Stdout, &tint.Options{Level: slog.LevelInfo, TimeFormat: time.Kitchen}))
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			slog.Error(err.Error())
+			logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		slog.Info("request", "Headers", fmt.Sprintf("+%v", r.Header), "Body", string(body))
+		logger.Info("request", "Headers", fmt.Sprintf("+%v", r.Header), "Body", string(body))
 
 		w.WriteHeader(http.StatusOK)
 	})
 
+	logger.Info("start server")
 	if err := http.ListenAndServe(":3001", mux); err != nil {
-		slog.Error("http listen and server error", "error", err.Error())
+		logger.Error("http listen and server error", "error", err.Error())
 	}
 }
